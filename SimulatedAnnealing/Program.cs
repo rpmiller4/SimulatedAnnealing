@@ -20,7 +20,6 @@ namespace SimulatedAnnealing
                 tsp.RunTwoOpt();
                 tsp.RunTwoOpt();
                 tsp.RunTwoOpt();
-                tsp.RunOptimizations();
             }
 
 

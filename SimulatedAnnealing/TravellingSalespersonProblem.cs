@@ -17,11 +17,8 @@ namespace SimulatedAnnealing
         private List<City> bestScenarioFound;
         private float bestErrorFound;
 
-
-
         int lastFirstCityMutationIndex;
         int lastSecondCityMutationIndex;
-        int smootherCityIndex;
         City smootherCity;
 
         bool fromData = false;
@@ -71,15 +68,6 @@ namespace SimulatedAnnealing
             {
                 citiesInOrder[i].OriginalCityNumber = i;
             }
-
-            //create a fake city to smooth out search space?
-            //citiesInOrder.Add(new City
-            //{
-            //    OriginalCityNumber = -1,
-            //    X = GetRandomNumber(-100, 100),
-            //    Y = GetRandomNumber(-100, 100),
-            //    //Z = GetRandomNumber(0, 20)
-            //});
         }
 
         private void GenerateData()
@@ -99,24 +87,6 @@ namespace SimulatedAnnealing
             this.citiesInOrder = cities;
         }
 
-
-        private float CoolingSchedule(float temperature)
-        {
-            if (temperature > .5)
-            {
-                temperature *= .99999f;
-            }
-            else if (temperature > .015)
-            {
-                temperature *= .999999f;
-            }
-            else if (temperature > .0001)
-            {
-                temperature *= .9999995f;
-            }
-            else temperature *= .9999999f;
-            return temperature;
-        }
         public void Run()
         {
             LoadData();
@@ -125,13 +95,12 @@ namespace SimulatedAnnealing
             float error = float.PositiveInfinity;
             bestErrorFound = float.PositiveInfinity;
             bestScenarioFound = new List<City>();
-            int epochs = 100000;
-            float temperature = .6f;
-            float coolingFactor = .995f;
+            int epochs = 10000000;
+            float temperature = 1f;
+            float coolingFactor = .999999f;
 
             for (int i = 0; i < epochs; i++)
             {
-                //temperature -= coolingFactor;
                 temperature *= coolingFactor;
                 Mutate();
                 error = CalculateError();
@@ -153,7 +122,7 @@ namespace SimulatedAnnealing
                     bestScenarioFound.Clear();
                     for (int c = 0; c < citiesInOrder.Count; c++)
                     {
-                        bestScenarioFound.Add(citiesInOrder[c].Copy()); // grr redundancy.
+                        bestScenarioFound.Add(citiesInOrder[c].Copy());
                     }
                     bestErrorFound = error;
                 }
@@ -163,56 +132,6 @@ namespace SimulatedAnnealing
             }
             DisplayResults();
 
-        }
-
-        public void RunOptimizations()
-        {
-            citiesInOrder.Clear();
-            for (int c = 0; c < bestScenarioFound.Count; c++)
-            {
-                citiesInOrder.Add(bestScenarioFound[c].Copy()); // grr redundancy.
-            }
-
-            float oldError = bestErrorFound;
-            float error = bestErrorFound;
-
-            int epochs = 150000;
-            float temperature = .0001f;
-            float coolingFactor = .99997f;
-
-            for (int i = 0; i < epochs; i++)
-            {
-                //temperature -= coolingFactor;
-                temperature *= coolingFactor;
-                Mutate();
-                error = CalculateError();
-                if (temperature > (float)seed.NextDouble()) // keep solution
-                {
-                    oldError = error;
-                }
-                else if (error < oldError) // keep solution
-                {
-                    oldError = error;
-                }
-                else
-                {
-                    RevertLastMutation();
-                }
-
-                if (error < bestErrorFound)
-                {
-                    bestScenarioFound.Clear();
-                    for (int c = 0; c < citiesInOrder.Count; c++)
-                    {
-                        bestScenarioFound.Add(citiesInOrder[c].Copy()); // grr redundancy.
-                    }
-                    bestErrorFound = error;
-                }
-
-                Console.WriteLine($"old error: {oldError} error: {error} temperature: {temperature}");
-
-            }
-            DisplayResults();
         }
 
         public void RunTwoOpt()
@@ -224,13 +143,12 @@ namespace SimulatedAnnealing
         public void Mutate()
         {
             SwapCities();
-            //MutateSmootherCity();
         }
 
         public void SwapCities()
         {
             int firstCity = seed.Next(citiesInOrder.Count);
-            int secondCity = (firstCity + seed.Next(citiesInOrder.Count-1)) % citiesInOrder.Count;
+            int secondCity = (firstCity + seed.Next(citiesInOrder.Count)) % citiesInOrder.Count;
 
             City toSwap = citiesInOrder[firstCity];
             citiesInOrder[firstCity] = citiesInOrder[secondCity];
@@ -238,16 +156,6 @@ namespace SimulatedAnnealing
 
             lastFirstCityMutationIndex = firstCity;
             lastSecondCityMutationIndex = secondCity;
-        }
-
-        public void MutateSmootherCity()
-        {
-             
-            City toMutate = citiesInOrder.Where(x => x.OriginalCityNumber == -1).First();
-            smootherCity = toMutate.Copy();
-
-            toMutate.X += GetRandomNumber(-5000f, 5000f);
-            toMutate.Y += GetRandomNumber(-5000f, 5000f);
         }
 
         int inversionsSuccessful = 0;
@@ -301,10 +209,6 @@ namespace SimulatedAnnealing
             City toSwap = citiesInOrder[lastFirstCityMutationIndex];
             citiesInOrder[lastFirstCityMutationIndex] = citiesInOrder[lastSecondCityMutationIndex];
             citiesInOrder[lastSecondCityMutationIndex] = toSwap;
-
-            //City toMutate = citiesInOrder.Where(x => x.OriginalCityNumber == -1).First();
-            //toMutate.X = smootherCity.X;
-            //toMutate.Y = smootherCity.Y;
         }
 
         public float CalculateError()
@@ -338,7 +242,6 @@ namespace SimulatedAnnealing
             float distance = 0;
             distance += Math.Abs(firstCity.X - secondCity.X);
             distance += Math.Abs(firstCity.Y - secondCity.Y);
-            //distance += Math.Abs(firstCity.Z - secondCity.Z);
             return distance;
         }
 
@@ -374,9 +277,9 @@ namespace SimulatedAnnealing
             return new City
             {
                 OriginalCityNumber = this.OriginalCityNumber,
-                X = this.X,
-                Y = this.Y,
-                Z = this.Z
+                X = X,
+                Y = Y,
+                Z = Z
             };
         }
 
