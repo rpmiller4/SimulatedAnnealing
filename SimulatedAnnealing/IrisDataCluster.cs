@@ -48,7 +48,7 @@ namespace SimulatedAnnealing
             float oldError = CalculateError();
             float error = float.PositiveInfinity;
 
-            int epochs = 2000000;
+            int epochs = 10000;
             float temperature = 1f;
             float coolingFactor = .99999f;
 
@@ -57,11 +57,7 @@ namespace SimulatedAnnealing
                 temperature *= coolingFactor;
                 Mutate();
                 error = CalculateError();
-                if (temperature > (float)seed.NextDouble()) // keep solution
-                {
-                    oldError = error;
-                }
-                else if (error < oldError) // keep solution
+                if (AcceptanceProbability(oldError, error, temperature) > (float)seed.NextDouble()) // keep solution
                 {
                     oldError = error;
                 }
@@ -89,6 +85,11 @@ namespace SimulatedAnnealing
             };
             int predictedClass = PredictClass(irisToClassify);
             Console.WriteLine($"predicted Class for last iris: {predictedClass}, {irisToClassify.ClassificationLabel}");
+        }
+
+        public float AcceptanceProbability(float oldError, float newError, float temperature)
+        {
+            return (float)Math.Exp((oldError - newError) / temperature);
         }
 
         public void Mutate()

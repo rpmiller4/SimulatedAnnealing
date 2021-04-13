@@ -19,7 +19,6 @@ namespace SimulatedAnnealing
 
         int lastFirstCityMutationIndex;
         int lastSecondCityMutationIndex;
-        City smootherCity;
 
         bool fromData = false;
         string xyDataFile;
@@ -95,23 +94,25 @@ namespace SimulatedAnnealing
             float error = float.PositiveInfinity;
             bestErrorFound = float.PositiveInfinity;
             bestScenarioFound = new List<City>();
-            int epochs = 10000000;
-            float temperature = 1f;
-            float coolingFactor = .999999f;
+            int epochs = 400000;
+            float temperature = 1000f;
+            float coolingFactor = .999991f;
+
+
 
             for (int i = 0; i < epochs; i++)
             {
                 temperature *= coolingFactor;
                 Mutate();
                 error = CalculateError();
-                if (temperature > (float)seed.NextDouble()) // keep solution
+                if (AcceptanceProbability(oldError, error, temperature) > (float)seed.NextDouble()) // keep solution
                 {
                     oldError = error;
                 }
-                else if (error < oldError) // keep solution
-                {
-                    oldError = error;
-                }
+                //else if (error < oldError) // keep solution
+                //{
+                //    oldError = error;
+                //}
                 else
                 {
                     RevertLastMutation();
@@ -132,6 +133,13 @@ namespace SimulatedAnnealing
             }
             DisplayResults();
 
+        }
+
+        public float AcceptanceProbability(float oldError, float newError, float temperature)
+        {
+            {
+                return (float)Math.Exp((oldError - newError) / temperature);
+            }
         }
 
         public void RunTwoOpt()
@@ -282,6 +290,5 @@ namespace SimulatedAnnealing
                 Z = Z
             };
         }
-
     }
 }
