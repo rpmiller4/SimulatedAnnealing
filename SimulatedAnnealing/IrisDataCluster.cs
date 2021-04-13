@@ -9,7 +9,7 @@ using System.Text;
 
 namespace SimulatedAnnealing
 {
-    public class IrisDataCluster
+    public class IrisDataCluster : IAnneal
     {
         private List<Iris> irisRecords = new List<Iris>();
         private List<Iris> irisClassifiers = new List<Iris>();
@@ -31,10 +31,10 @@ namespace SimulatedAnnealing
         {
             var config = new CsvConfiguration(CultureInfo.InvariantCulture)
             {
-                NewLine = "\n"
+                NewLine = Environment.NewLine
             };
 
-            using (var reader = new StreamReader("data/iris.data"))
+            using (var reader = new StreamReader("./data/iris.data"))
             using (var csv = new CsvReader(reader, config))
             {
                 irisRecords = csv.GetRecords<Iris>().ToList();
@@ -55,7 +55,7 @@ namespace SimulatedAnnealing
             for (int i = 0; i < epochs; i++)
             {
                 temperature *= coolingFactor;
-                Step();
+                Mutate();
                 error = CalculateError();
                 if (temperature > (float)seed.NextDouble()) // keep solution
                 {
@@ -67,7 +67,7 @@ namespace SimulatedAnnealing
                 }
                 else
                 {
-                    RevertLastStep();
+                    RevertLastMutation();
                 }
 
                 Console.WriteLine($"old error: {Math.Sqrt(oldError)} error: {Math.Sqrt(error)} temperature: {temperature}");
@@ -91,13 +91,13 @@ namespace SimulatedAnnealing
             Console.WriteLine($"predicted Class for last iris: {predictedClass}, {irisToClassify.ClassificationLabel}");
         }
 
-        public void Step()
+        public void Mutate()
         {
             MutateIris();
             MutateClassifier(1);
         }
 
-        public void RevertLastStep()
+        public void RevertLastMutation()
         {
             irisClassifiers[classifierIndexToMutate] = oldClassifier;
             irisRecords[irisIndexToMutate] = oldIris;
@@ -120,7 +120,7 @@ namespace SimulatedAnnealing
             return squaredSumError;
         }
 
-        public float CalculateCategoryDistance(Iris classifier, Iris record)
+        private float CalculateCategoryDistance(Iris classifier, Iris record)
         {
             float sumOfPropDistances = 0;
             sumOfPropDistances += (float)Math.Pow(classifier.PetalLength - record.PetalLength, 2);
@@ -165,7 +165,7 @@ namespace SimulatedAnnealing
             }
         }
 
-        public void SetupClusterIndicators()
+        private void SetupClusterIndicators()
         {
             for (int i = 0; i < initialClusters; i++)
             {
