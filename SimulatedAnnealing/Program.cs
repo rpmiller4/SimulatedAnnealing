@@ -6,7 +6,8 @@ namespace SimulatedAnnealing
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Hello World!");
+            IrisDataCluster classifier = new IrisDataCluster(3);
+            classifier.Run();
         }
     }
 }
