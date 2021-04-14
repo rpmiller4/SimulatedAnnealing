@@ -1,12 +1,11 @@
 ﻿namespace SimulatedAnnealing
 {
-    public interface IAnneal
+    public interface IAnneal : IRun
     {
         float CalculateError();
         float GetRandomNumber(float minimum, float maximum);
         void LoadData();
         void RevertLastMutation();
-        void Run();
         void Mutate();
     }
 }

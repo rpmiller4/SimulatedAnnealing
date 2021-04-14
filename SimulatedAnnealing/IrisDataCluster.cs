@@ -6,6 +6,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace SimulatedAnnealing
 {
@@ -41,7 +42,7 @@ namespace SimulatedAnnealing
             }
         }
 
-        public void Run()
+        public void RunAsync()
         {
             LoadData();
             SetupClusterIndicators();
@@ -207,6 +208,15 @@ namespace SimulatedAnnealing
             return (float)seed.NextDouble() * (maximum - minimum) + minimum;
         }
 
+        Task IRun.RunAsync()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Run()
+        {
+            throw new NotImplementedException();
+        }
     }
 
     public class Iris

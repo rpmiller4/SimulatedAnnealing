@@ -6,6 +6,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace SimulatedAnnealing
 {
@@ -33,6 +34,11 @@ namespace SimulatedAnnealing
         {
             fromData = true;
             xyDataFile = XyDataFile;
+        }
+
+        internal List<City> GetCities()
+        {
+            return bestScenarioFound;
         }
 
         public void LoadData()
@@ -270,6 +276,11 @@ namespace SimulatedAnnealing
         public float GetRandomNumber(float minimum, float maximum)
         {
             return (float)seed.NextDouble() * (maximum - minimum) + minimum;
+        }
+
+        Task IRun.RunAsync()
+        {
+            throw new NotImplementedException();
         }
     }
 
