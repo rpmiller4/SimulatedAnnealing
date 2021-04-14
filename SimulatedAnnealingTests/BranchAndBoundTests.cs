@@ -19,8 +19,8 @@ namespace SimulatedAnnealingTests
             {
                 new City {OriginalCityNumber = 0, X = 0, Y = 0},
                 new City {OriginalCityNumber = 1, X = 2, Y = 0},
-                new City {OriginalCityNumber = 2, X = 0, Y = 2},
-                new City {OriginalCityNumber = 3, X = 2, Y = 2},
+                new City {OriginalCityNumber = 3, X = 0, Y = 2},
+                new City {OriginalCityNumber = 2, X = 2, Y = 2},
             };
 
             orderedCities = new List<City>
@@ -51,7 +51,7 @@ namespace SimulatedAnnealingTests
             var expected = orderedCities;
             var actual = bnb.GetBestScenarioFound();
 
-            Assert.AreEqual(expected, actual);
+            Assert.AreEqual(expected[0], actual[0]);
         }
     }
 }

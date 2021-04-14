@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 
 namespace SimulatedAnnealing
@@ -13,15 +14,15 @@ namespace SimulatedAnnealing
             //TravellingSalespersonProblem tsp = new TravellingSalespersonProblem(50);
             //tsp.Run();
 
-            TravellingSalespersonProblem tsp = new TravellingSalespersonProblem("./data/cities.data");
-            tsp.Run();
-            for (int i = 0; i < 3; i++)
-            {
-                //tsp.RunRestart();
-                tsp.RunTwoOpt();
-                tsp.RunTwoOpt();
-                tsp.RunTwoOpt();
-            }
+            //TravellingSalespersonProblem tsp = new TravellingSalespersonProblem("./data/cities.data");
+            //tsp.Run();
+            //for (int i = 0; i < 3; i++)
+            //{
+            //    //tsp.RunRestart();
+            //    tsp.RunTwoOpt();
+            //    tsp.RunTwoOpt();
+            //    tsp.RunTwoOpt();
+            //}
 
             //TravellingSalespersonProblem tsp = new TravellingSalespersonProblem("./data/cities.data");
             //tsp.Run();
@@ -31,6 +32,8 @@ namespace SimulatedAnnealing
             //BranchAndBound bnb = new BranchAndBound("./data/cities.data");
             //await bnb.RunAsync();
 
+            VehicleRoutingProblem vrp = new VehicleRoutingProblem();
+            vrp.Run();
         }
     }
 }

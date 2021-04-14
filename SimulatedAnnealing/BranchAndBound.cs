@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 
 namespace SimulatedAnnealing
 {
+    // See https://tspvis.com/ for BranchAndBound implementation in javascript
     public class BranchAndBound : IRun
     {
         //private PathAndCost currentPathAndCost;
