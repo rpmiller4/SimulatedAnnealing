@@ -17,18 +17,18 @@ namespace SimulatedAnnealingTests
         {
             fourCities = new List<City>
             {
-                new City {OriginalCityNumber = 0, X = 0, Y = 0},
-                new City {OriginalCityNumber = 1, X = 2, Y = 0},
-                new City {OriginalCityNumber = 3, X = 0, Y = 2},
-                new City {OriginalCityNumber = 2, X = 2, Y = 2},
+                new City {Id = 0, X = 0, Y = 0},
+                new City {Id = 1, X = 2, Y = 0},
+                new City {Id = 3, X = 0, Y = 2},
+                new City {Id = 2, X = 2, Y = 2},
             };
 
             orderedCities = new List<City>
             {
-                new City {OriginalCityNumber = 0, X = 0, Y = 0},
-                new City {OriginalCityNumber = 1, X = 2, Y = 0},
-                new City {OriginalCityNumber = 2, X = 2, Y = 2},
-                new City {OriginalCityNumber = 3, X = 0, Y = 2},
+                new City {Id = 0, X = 0, Y = 0},
+                new City {Id = 1, X = 2, Y = 0},
+                new City {Id = 2, X = 2, Y = 2},
+                new City {Id = 3, X = 0, Y = 2},
             };
         }
 

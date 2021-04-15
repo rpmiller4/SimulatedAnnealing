@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace SimulatedAnnealing
 {
-    class TravellingSalespersonProblem : IAnneal
+    class TravelingSalespersonProblem : IAnneal
     {
         private Random seed = new Random();
         int nCitiesToGenerate;
@@ -24,13 +24,13 @@ namespace SimulatedAnnealing
         bool fromData = false;
         string xyDataFile;
 
-        public TravellingSalespersonProblem(int citiesToGenerate)
+        public TravelingSalespersonProblem(int citiesToGenerate)
         {
             nCitiesToGenerate = citiesToGenerate;
             fromData = false;
         }
 
-        public TravellingSalespersonProblem(string XyDataFile)
+        public TravelingSalespersonProblem(string XyDataFile)
         {
             fromData = true;
             xyDataFile = XyDataFile;
@@ -71,7 +71,7 @@ namespace SimulatedAnnealing
 
             for (int i = 0; i < citiesInOrder.Count; i++)
             {
-                citiesInOrder[i].OriginalCityNumber = i;
+                citiesInOrder[i].Id = i;
             }
         }
 
@@ -83,7 +83,7 @@ namespace SimulatedAnnealing
             {
                 cities.Add(new City
                 {
-                    OriginalCityNumber = i,
+                    Id = i,
                     X = GetRandomNumber(-100, 100),
                     Y = GetRandomNumber(-100, 100),
                     Z = GetRandomNumber(0, 20)
@@ -265,7 +265,7 @@ namespace SimulatedAnnealing
 
             for (int i = 0; i < citiesInOrder.Count; i++)
             {
-                Console.Write(bestScenarioFound[i].OriginalCityNumber + ", ");
+                Console.Write(bestScenarioFound[i].Id + ", ");
             }
 
             Console.WriteLine($"Best error {bestErrorFound}");
@@ -286,14 +286,14 @@ namespace SimulatedAnnealing
 
     public class City
     {
-        public int OriginalCityNumber { get; set; }
+        public int Id { get; set; }
         public float X { get; set; }
         public float Y { get; set; }
         public float Z { get; set; }
 
         protected bool Equals(City other)
         {
-            return OriginalCityNumber == other.OriginalCityNumber && X.Equals(other.X) && Y.Equals(other.Y) && Z.Equals(other.Z);
+            return Id == other.Id && X.Equals(other.X) && Y.Equals(other.Y) && Z.Equals(other.Z);
         }
 
         public override bool Equals(object obj)
@@ -308,7 +308,7 @@ namespace SimulatedAnnealing
         {
             unchecked
             {
-                var hashCode = OriginalCityNumber;
+                var hashCode = Id;
                 hashCode = (hashCode * 397) ^ X.GetHashCode();
                 hashCode = (hashCode * 397) ^ Y.GetHashCode();
                 hashCode = (hashCode * 397) ^ Z.GetHashCode();
@@ -330,7 +330,7 @@ namespace SimulatedAnnealing
         {
             return new City
             {
-                OriginalCityNumber = this.OriginalCityNumber,
+                Id = this.Id,
                 X = X,
                 Y = Y,
                 Z = Z

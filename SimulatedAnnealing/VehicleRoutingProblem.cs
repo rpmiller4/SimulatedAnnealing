@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using CsvHelper;
 using CsvHelper.Configuration;
+using SimulatedAnnealing.Utilities;
 
 namespace SimulatedAnnealing
 {
@@ -19,16 +20,17 @@ namespace SimulatedAnnealing
         private int inversionsSuccessful;
         private float bestErrorFound;
         private List<City> bestScenarioFound;
+        private int[][] timeDistances;
 
         public VehicleRoutingProblem()
         {
             LoadLocations();
             LoadTimeWindows();
+            LoadTimeDistances();
         }
 
         public void Run()
         {
-
             float oldError = CalculateError();
             float error = float.PositiveInfinity;
             bestErrorFound = float.PositiveInfinity;
@@ -36,8 +38,6 @@ namespace SimulatedAnnealing
             int epochs = 200000;
             float temperature = 2f;
             float coolingFactor = .999991f;
-
-
 
             for (int i = 0; i < epochs; i++)
             {
@@ -107,6 +107,11 @@ namespace SimulatedAnnealing
             }
         }
 
+        public void LoadTimeDistances()
+        {
+            timeDistances = new MatrixHelper().GetRecords("./synthdata/timeDistances.data");
+        }
+
         public float AcceptanceProbability(float oldError, float newError, float temperature)
         {
             {
@@ -152,12 +157,23 @@ namespace SimulatedAnnealing
 
             for (int i = 0; i < citiesInOrder.Count; i++)
             {
-                Console.Write(bestScenarioFound[i].OriginalCityNumber + ", ");
+                Console.Write(bestScenarioFound[i].Id + ", ");
             }
 
             Console.WriteLine($"Best error {bestErrorFound}");
             Console.WriteLine($"Inversions Successful: {inversionsSuccessful}");
             inversionsSuccessful = 0;
+            DisplayTotalTimeCost();
+        }
+
+        public void DisplayTotalTimeCost()
+        {
+            int totalTime = 0;
+            for (int i = 0; i < citiesInOrder.Count - 1; i++)
+            {
+                totalTime += timeDistances[bestScenarioFound[i].Id][bestScenarioFound[i + 1].Id];
+            }
+            Console.WriteLine($"totalTimeCost={totalTime}");
         }
 
         public void Mutate()

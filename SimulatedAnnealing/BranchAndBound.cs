@@ -62,7 +62,7 @@ namespace SimulatedAnnealing
 
             for (int i = 0; i < citiesInOrder.Count; i++)
             {
-                citiesInOrder[i].OriginalCityNumber = i;
+                citiesInOrder[i].Id = i;
             }
 
             for (int i = 0; i < citiesInOrder.Count; i++)
@@ -118,7 +118,7 @@ namespace SimulatedAnnealing
                 //bestScenarioFound = route;
                 for (int i = 0; i < route.Count; i++)
                 {
-                    Console.Write(route[i].OriginalCityNumber + ", ");
+                    Console.Write(route[i].Id + ", ");
                 }
                 return new PathAndCost { Path = route, Cost = error };
             }
