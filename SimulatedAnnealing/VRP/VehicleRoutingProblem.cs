@@ -36,7 +36,7 @@ namespace SimulatedAnnealing.VRP
         private bool lastMutationWasOneAppt;
         private List<List<City>> routes;
 
-        public VehicleRoutingProblem(int vehicles = 3)
+        public VehicleRoutingProblem(int vehicles = 4)
         {
             LoadLocations();
             LoadTimeWindows();
@@ -261,7 +261,7 @@ namespace SimulatedAnnealing.VRP
         public void BuildRoutes()
         {
             appointments = new List<Appointment>();
-            foreach (var c in citiesInOrder)
+            foreach (var c in citiesInOrder.Where(x=>x.Id != 0))
             {
                 appointments.Add(CreateAppointment(c));
             }
@@ -306,20 +306,21 @@ namespace SimulatedAnnealing.VRP
                 }
             }
 
-            error += CalculateFairness();
-            error += CalculateTimePrecision();
+            error += CalculateFairness() * 4;
+            error += CalculateTimePrecision() * 3;
             error += CalculateTimeOverlap();
-
+            error += CalculateRouteLength();
 
             return error;
         }
 
+ 
 
 
         private float CalculateFairness() // assume drivers want equal n routes.
         {
             float mse = 0;
-            var average = citiesInOrder.Count / routes.Count;
+            var average = appointments.Count / routes.Count;
 
             for (int i = 0; i < routes.Count; i++)
             {
@@ -355,10 +356,13 @@ namespace SimulatedAnnealing.VRP
                 {
                     error += a.End - respectiveCityTimeWindow.End;
                 }
+
+                error += Math.Abs(a.Start - a.End) - 1; //short stays.
             }
 
             return error;
         }
+
         private float CalculateTimeOverlap()
         {
 
@@ -391,6 +395,27 @@ namespace SimulatedAnnealing.VRP
             return error;
         }
 
+        private float CalculateRouteLength()
+        {
+            float error = 0;
+            for (int i = 0; i < nVehicles; i++)
+            {
+                var relevantAppts = appointments.Where(x => x.VehicleId == i).OrderBy(x => x.Start).ToList();
+                if (relevantAppts.Count == 0)
+                {
+                    continue;
+
+                }
+
+                var MinStart = relevantAppts.Min(x => x.Start);
+                var MaxEnd = relevantAppts.Max(x => x.End);
+
+                error += Math.Abs(MaxEnd - MinStart);
+            }
+
+            return error;
+        }
+
         private void DisplayTimeWindows()
         {
             
@@ -416,41 +441,11 @@ namespace SimulatedAnnealing.VRP
             return distance;
         }
 
-        public void PrintAllDistances()
-        {
-            for (int i = 0; i < citiesInOrder.Count; i++)
-            {
-                for (int j = 0; j < citiesInOrder.Count; j++)
-                {
-                    Console.Write($"{CalculateDistance(citiesInOrder[i], citiesInOrder[j])} ");
-                }
-                Console.WriteLine();
-            }
-        }
-
         public void DisplayResults()
         {
             Console.WriteLine("List of routes in their new order.");
-
-            DisplayRoutes();
             DisplayTimeWindows();
         }
-
-
-        public void DisplayRoutes()
-        {
-            //for (int i = 0; i < bestScenarioFound.Count; i++)
-            //{
-            //    Console.WriteLine($"Routes for vehicle {i}:");
-
-            //    Console.Write($"{bestScenarioFound[i].CityId}, ");
-                
-            //    Console.WriteLine();
-            //}
-
-        }
-
-
     }
 
     // When deliveries can be routed successfully
