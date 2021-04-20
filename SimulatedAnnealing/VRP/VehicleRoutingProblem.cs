@@ -73,7 +73,6 @@ namespace SimulatedAnnealing.VRP
                     RevertLastMutation();
                 }
 
-
                 if (error < bestErrorFound)
                 {
                     bestErrorFound = error;
@@ -228,14 +227,12 @@ namespace SimulatedAnnealing.VRP
             appointments[lastRouteMutated] = oldTimeBlock;
         }
 
-
         public void MutateTimeShift(Appointment appointment)
         {
             int shiftDirection = seed.Next(2) == 0 ? -1 : 1;
             appointment.Start = (appointment.Start + shiftDirection) % HoursInADay;
             appointment.End = (appointment.End + shiftDirection) % HoursInADay;
         }
-
 
         public void MutateTimeRandom(Appointment appointment)
         {
@@ -267,12 +264,9 @@ namespace SimulatedAnnealing.VRP
             }
         }
 
-
         public float AcceptanceProbability(float oldError, float newError, float temperature)
         {
-            {
-                return (float)Math.Exp((oldError - newError) / temperature);
-            }
+            return (float)Math.Exp((oldError - newError) / temperature);
         }
         public float CalculateError()
         {
@@ -314,9 +308,6 @@ namespace SimulatedAnnealing.VRP
             return error;
         }
 
- 
-
-
         private float CalculateFairness() // assume drivers want equal n routes.
         {
             float mse = 0;
@@ -330,7 +321,6 @@ namespace SimulatedAnnealing.VRP
             return mse;
         }
 
-
         private float CalculateTimePrecision()
         {
             float error = 0;
@@ -339,7 +329,7 @@ namespace SimulatedAnnealing.VRP
                 var respectiveCityTimeWindow = timeWindows.First(x => x.CityId == a.CityId);
                 if (a.Start > a.End)
                 {
-                    error += (float)Math.Pow(a.Start - a.End, 2) * 2;
+                    error += (float)Math.Pow(a.Start - a.End, 2) * 3;
                 }
 
                 if (a.Start == a.End)
@@ -354,7 +344,7 @@ namespace SimulatedAnnealing.VRP
 
                 if (a.End > respectiveCityTimeWindow.End)
                 {
-                    error += (float)Math.Pow(a.End - respectiveCityTimeWindow.End, 2);
+                    error += (float)Math.Pow(a.End - respectiveCityTimeWindow.End, 2) * 3;
                 }
 
                 error += Math.Abs(a.Start - a.End) - 1; //short stays.
@@ -404,13 +394,11 @@ namespace SimulatedAnnealing.VRP
                 if (relevantAppts.Count == 0)
                 {
                     continue;
-
                 }
+                var minStart = relevantAppts.Min(x => x.Start);
+                var maxEnd = relevantAppts.Max(x => x.End);
 
-                var MinStart = relevantAppts.Min(x => x.Start);
-                var MaxEnd = relevantAppts.Max(x => x.End);
-
-                error += Math.Abs(MaxEnd - MinStart);
+                error += Math.Abs(maxEnd - minStart);
             }
 
             return error;
@@ -454,11 +442,6 @@ namespace SimulatedAnnealing.VRP
         public int CityId { get; set; }
         public int Start { get; set; }
         public int End { get; set; }
-    }
-
-    public class VehicleSchedule
-    {
-        public List<Appointment> ScheduleBlocks { get; set; }
     }
 
     public class Appointment
