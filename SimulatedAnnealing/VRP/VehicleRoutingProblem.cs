@@ -36,7 +36,7 @@ namespace SimulatedAnnealing.VRP
         private bool lastMutationWasOneAppt;
         private List<List<City>> routes;
 
-        public VehicleRoutingProblem(int vehicles = 2)
+        public VehicleRoutingProblem(int vehicles = 3)
         {
             LoadLocations();
             LoadTimeWindows();
@@ -334,7 +334,7 @@ namespace SimulatedAnnealing.VRP
 
                 if (a.Start == a.End)
                 {
-                    error += 2;
+                    error += 5;
                 }
 
                 if (a.Start < respectiveCityTimeWindow.Start)
@@ -376,6 +376,11 @@ namespace SimulatedAnnealing.VRP
                         error += 5;
                     }
                     if (relevantAppts[j].End == relevantAppts[j + 1].End)
+                    {
+                        error += 5;
+                    }
+
+                    if (relevantAppts[j].End > relevantAppts[j + 1].Start - 1) // one hour relaxation time.
                     {
                         error += 5;
                     }
