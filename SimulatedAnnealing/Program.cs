@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
+using SimulatedAnnealing.VRP;
 
 namespace SimulatedAnnealing
 {
@@ -11,10 +12,10 @@ namespace SimulatedAnnealing
             //IrisDataCluster classifier = new IrisDataCluster(3);
             //classifier.RunAsync();
 
-            //TravellingSalespersonProblem tsp = new TravellingSalespersonProblem(50);
+            //TravelingSalespersonProblem tsp = new TravelingSalespersonProblem(50);
             //tsp.Run();
 
-            //TravellingSalespersonProblem tsp = new TravellingSalespersonProblem("./data/cities.data");
+            //TravelingSalespersonProblem tsp = new TravelingSalespersonProblem("./data/cities.data");
             //tsp.Run();
             //for (int i = 0; i < 3; i++)
             //{

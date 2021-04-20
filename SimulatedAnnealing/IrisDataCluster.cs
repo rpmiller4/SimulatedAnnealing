@@ -49,7 +49,7 @@ namespace SimulatedAnnealing
             float oldError = CalculateError();
             float error = float.PositiveInfinity;
 
-            int epochs = 10000;
+            int epochs = 2000000;
             float temperature = 1f;
             float coolingFactor = .99999f;
 
@@ -59,6 +59,10 @@ namespace SimulatedAnnealing
                 Mutate();
                 error = CalculateError();
                 if (AcceptanceProbability(oldError, error, temperature) > (float)seed.NextDouble()) // keep solution
+                {
+                    oldError = error;
+                }
+                else if (error < oldError)
                 {
                     oldError = error;
                 }
