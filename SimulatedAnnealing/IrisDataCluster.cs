@@ -6,10 +6,11 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace SimulatedAnnealing
 {
-    public class IrisDataCluster
+    public class IrisDataCluster : IAnneal
     {
         private List<Iris> irisRecords = new List<Iris>();
         private List<Iris> irisClassifiers = new List<Iris>();
@@ -31,17 +32,17 @@ namespace SimulatedAnnealing
         {
             var config = new CsvConfiguration(CultureInfo.InvariantCulture)
             {
-                NewLine = "\n"
+                NewLine = Environment.NewLine
             };
 
-            using (var reader = new StreamReader("data/iris.data"))
+            using (var reader = new StreamReader("./data/iris.data"))
             using (var csv = new CsvReader(reader, config))
             {
                 irisRecords = csv.GetRecords<Iris>().ToList();
             }
         }
 
-        public void Run()
+        public void RunAsync()
         {
             LoadData();
             SetupClusterIndicators();
@@ -55,19 +56,19 @@ namespace SimulatedAnnealing
             for (int i = 0; i < epochs; i++)
             {
                 temperature *= coolingFactor;
-                Step();
+                Mutate();
                 error = CalculateError();
-                if (temperature > (float)seed.NextDouble()) // keep solution
+                if (AcceptanceProbability(oldError, error, temperature) > (float)seed.NextDouble()) // keep solution
                 {
                     oldError = error;
                 }
-                else if (error < oldError) // keep solution
+                else if (error < oldError)
                 {
                     oldError = error;
                 }
                 else
                 {
-                    RevertLastStep();
+                    RevertLastMutation();
                 }
 
                 Console.WriteLine($"old error: {Math.Sqrt(oldError)} error: {Math.Sqrt(error)} temperature: {temperature}");
@@ -91,13 +92,18 @@ namespace SimulatedAnnealing
             Console.WriteLine($"predicted Class for last iris: {predictedClass}, {irisToClassify.ClassificationLabel}");
         }
 
-        public void Step()
+        public float AcceptanceProbability(float oldError, float newError, float temperature)
+        {
+            return (float)Math.Exp((oldError - newError) / temperature);
+        }
+
+        public void Mutate()
         {
             MutateIris();
             MutateClassifier(1);
         }
 
-        public void RevertLastStep()
+        public void RevertLastMutation()
         {
             irisClassifiers[classifierIndexToMutate] = oldClassifier;
             irisRecords[irisIndexToMutate] = oldIris;
@@ -120,7 +126,7 @@ namespace SimulatedAnnealing
             return squaredSumError;
         }
 
-        public float CalculateCategoryDistance(Iris classifier, Iris record)
+        private float CalculateCategoryDistance(Iris classifier, Iris record)
         {
             float sumOfPropDistances = 0;
             sumOfPropDistances += (float)Math.Pow(classifier.PetalLength - record.PetalLength, 2);
@@ -165,7 +171,7 @@ namespace SimulatedAnnealing
             }
         }
 
-        public void SetupClusterIndicators()
+        private void SetupClusterIndicators()
         {
             for (int i = 0; i < initialClusters; i++)
             {
@@ -206,6 +212,15 @@ namespace SimulatedAnnealing
             return (float)seed.NextDouble() * (maximum - minimum) + minimum;
         }
 
+        Task IRun.RunAsync()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Run()
+        {
+            throw new NotImplementedException();
+        }
     }
 
     public class Iris
