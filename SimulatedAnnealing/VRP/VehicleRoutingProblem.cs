@@ -36,7 +36,7 @@ namespace SimulatedAnnealing.VRP
         private bool lastMutationWasOneAppt;
         private List<List<City>> routes;
 
-        public VehicleRoutingProblem(int vehicles = 4)
+        public VehicleRoutingProblem(int vehicles = 2)
         {
             LoadLocations();
             LoadTimeWindows();
@@ -339,7 +339,7 @@ namespace SimulatedAnnealing.VRP
                 var respectiveCityTimeWindow = timeWindows.First(x => x.CityId == a.CityId);
                 if (a.Start > a.End)
                 {
-                    error += a.Start - a.End;
+                    error += (float)Math.Pow(a.Start - a.End, 2) * 2;
                 }
 
                 if (a.Start == a.End)
@@ -354,7 +354,7 @@ namespace SimulatedAnnealing.VRP
 
                 if (a.End > respectiveCityTimeWindow.End)
                 {
-                    error += a.End - respectiveCityTimeWindow.End;
+                    error += (float)Math.Pow(a.End - respectiveCityTimeWindow.End, 2);
                 }
 
                 error += Math.Abs(a.Start - a.End) - 1; //short stays.
