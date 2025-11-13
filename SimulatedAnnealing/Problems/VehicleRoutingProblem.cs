@@ -1,97 +1,54 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Net.Http.Headers;
-using System.Xml.Schema;
 using CsvHelper;
 using CsvHelper.Configuration;
-using SimulatedAnnealing;
+using SimulatedAnnealing.Core;
+using SimulatedAnnealing.Models;
 using SimulatedAnnealing.Utilities;
 
-namespace SimulatedAnnealing.VRP
+namespace SimulatedAnnealing.Problems
 {
-    public class VehicleRoutingProblem
+    public class VehicleRoutingProblem : SimulatedAnnealingBase
     {
         private List<City> citiesInOrder;
         private List<TimeWindow> timeWindows;
-        private Random seed = new Random();
-        private float bestErrorFound;
         private List<Appointment> bestScenarioFound;
         private int[][] timeDistances;
         private int nVehicles;
 
         private List<Appointment> appointments;
-
         private int lastRouteMutated;
-
 
         private Appointment oldTimeBlock;
         private Appointment oldLeftAppointment;
         private Appointment oldRightAppointment;
 
         private const int HoursInADay = 24;
-
         private bool lastMutationWasOneAppt;
         private List<List<City>> routes;
 
         public VehicleRoutingProblem(int vehicles = 3)
         {
+            nVehicles = vehicles;
+
+            // Override default parameters for VRP
+            Epochs = 1400000;
+            InitialTemperature = 1000f;
+            CoolingFactor = 0.999992f;
+        }
+
+        public override void LoadData()
+        {
             LoadLocations();
             LoadTimeWindows();
             LoadTimeDistances();
-            nVehicles = vehicles;
             BuildRoutes();
         }
 
-        public void Run()
-        {
-            float oldError = CalculateError();
-            float error = float.PositiveInfinity;
-            bestErrorFound = float.PositiveInfinity;
-            bestScenarioFound = new List<Appointment>();
-            int epochs = 1400000;
-            float temperature = 1000f;
-            float coolingFactor = .999992f;
-
-            for (int i = 0; i < epochs; i++)
-            {
-                temperature *= coolingFactor;
-                Mutate();
-                error = CalculateError();
-                if (AcceptanceProbability(oldError, error, temperature) > (float)seed.NextDouble()) // keep solution
-                {
-                    oldError = error;
-                }
-                //else if (error < oldError) // keep solution
-                //{
-                //    oldError = error;
-                //}
-                else
-                {
-                    RevertLastMutation();
-                }
-
-
-                if (error < bestErrorFound)
-                {
-                    bestErrorFound = error;
-                    bestScenarioFound.Clear();
-                    for (int k = 0; k < appointments.Count; k++)
-                    { 
-                        bestScenarioFound.Add(appointments[k].Copy());
-                    }
-                }
-
-                Console.WriteLine($"old error: {oldError} error: {error} temperature: {temperature}");
-
-            }
-            DisplayResults();
-
-        }
-
-        public void LoadLocations()
+        private void LoadLocations()
         {
             var config = new CsvConfiguration(CultureInfo.InvariantCulture)
             {
@@ -101,14 +58,14 @@ namespace SimulatedAnnealing.VRP
                 MissingFieldFound = null
             };
 
-            using (var reader = new StreamReader("./synthdata/locations.data"))
+            using (var reader = new StreamReader(DataConfiguration.LocationsDataFile))
             using (var csv = new CsvReader(reader, config))
             {
                 citiesInOrder = csv.GetRecords<City>().ToList();
             }
         }
 
-        public void LoadTimeWindows()
+        private void LoadTimeWindows()
         {
             var config = new CsvConfiguration(CultureInfo.InvariantCulture)
             {
@@ -118,21 +75,21 @@ namespace SimulatedAnnealing.VRP
                 MissingFieldFound = null
             };
 
-            using (var reader = new StreamReader("./synthdata/timeWindows.data"))
+            using (var reader = new StreamReader(DataConfiguration.TimeWindowsDataFile))
             using (var csv = new CsvReader(reader, config))
             {
                 timeWindows = csv.GetRecords<TimeWindow>().ToList();
             }
         }
 
-        public void LoadTimeDistances()
+        private void LoadTimeDistances()
         {
-            timeDistances = new MatrixHelper().GetRecords("./synthdata/timeDistances.data");
+            timeDistances = new MatrixHelper().GetRecords(DataConfiguration.TimeDistancesDataFile);
         }
 
-        public Appointment CreateAppointment(City city)
+        private Appointment CreateAppointment(City city)
         {
-            var appointment = new Appointment {CityId = city.Id};
+            var appointment = new Appointment { CityId = city.Id };
             var startTime = seed.Next(timeWindows[city.Id].Start, timeWindows[city.Id].End);
             appointment.Start = startTime;
             appointment.End = startTime + 1;
@@ -141,7 +98,16 @@ namespace SimulatedAnnealing.VRP
             return appointment;
         }
 
-        public void Mutate()
+        private void BuildRoutes()
+        {
+            appointments = new List<Appointment>();
+            foreach (var c in citiesInOrder)
+            {
+                appointments.Add(CreateAppointment(c));
+            }
+        }
+
+        public override void Mutate()
         {
             if (seed.Next(2) == 0)
             {
@@ -171,7 +137,7 @@ namespace SimulatedAnnealing.VRP
             }
         }
 
-        public void RevertLastMutation()
+        public override void RevertLastMutation()
         {
             if (lastMutationWasOneAppt)
             {
@@ -183,67 +149,56 @@ namespace SimulatedAnnealing.VRP
             }
         }
 
-        public void SwapVehicleAssignment(Appointment left, Appointment right)
+        private void SwapVehicleAssignment(Appointment left, Appointment right)
         {
             var temporary = left.VehicleId;
             left.VehicleId = right.VehicleId;
             right.VehicleId = temporary;
         }
 
-        public void SwapVehicleAssignment(Appointment appointment)
+        private void SwapVehicleAssignment(Appointment appointment)
         {
             oldTimeBlock = appointment.Copy();
             appointment.VehicleId = (appointment.VehicleId + seed.Next(nVehicles)) % nVehicles;
         }
 
-        public void MutateTimeBlock(Appointment appointment)
+        private void MutateTimeBlock(Appointment appointment)
         {
             oldTimeBlock = appointment.Copy();
 
             switch (seed.Next(3))
             {
                 case 0:
-                {
-                    //shift left or right
                     MutateTimeShift(appointment);
                     break;
-                }
                 case 1:
-                {
-                    //random mutation
                     MutateTimeRandom(appointment);
                     break;
-                }
                 case 2:
-                {
-                    //shrink normalize?
                     MutateTimeShrink(appointment);
                     break;
-                }
             }
         }
 
-        public void UndoMutateTimeBlock()
+        private void UndoMutateTimeBlock()
         {
             appointments[lastRouteMutated] = oldTimeBlock;
         }
 
-
-        public void MutateTimeShift(Appointment appointment)
+        private void MutateTimeShift(Appointment appointment)
         {
             int shiftDirection = seed.Next(2) == 0 ? -1 : 1;
             appointment.Start = (appointment.Start + shiftDirection) % HoursInADay;
             appointment.End = (appointment.End + shiftDirection) % HoursInADay;
         }
 
-
-        public void MutateTimeRandom(Appointment appointment)
+        private void MutateTimeRandom(Appointment appointment)
         {
             appointment.Start = seed.Next(0, HoursInADay) % HoursInADay;
             appointment.End = seed.Next(0, HoursInADay) % HoursInADay;
         }
 
-        public void MutateTimeShrink(Appointment appointment)
+        private void MutateTimeShrink(Appointment appointment)
         {
             bool shrinkLeftToRight = seed.Next(2) == 0;
 
@@ -255,41 +210,23 @@ namespace SimulatedAnnealing.VRP
             {
                 appointment.End = (appointment.End - 1) % HoursInADay;
             }
-
         }
 
-        public void BuildRoutes()
-        {
-            appointments = new List<Appointment>();
-            foreach (var c in citiesInOrder)
-            {
-                appointments.Add(CreateAppointment(c));
-            }
-        }
-
-
-        public float AcceptanceProbability(float oldError, float newError, float temperature)
-        {
-            {
-                return (float)Math.Exp((oldError - newError) / temperature);
-            }
-        }
-        public float CalculateError()
+        public override float CalculateError()
         {
             float error = 0;
 
             routes = new List<List<City>>();
 
-            for (int i = 0; i < nVehicles; i++) // time complexity suspect here.
+            for (int i = 0; i < nVehicles; i++)
             {
                 routes.Add(new List<City>());
                 var relevantAppointments = appointments.Where(x => x.VehicleId == i).OrderBy(x => x.Start).ToList();
 
                 foreach (var ra in relevantAppointments)
                 {
-                    routes[i].Add(citiesInOrder.First(x=>x.Id == ra.CityId));
+                    routes[i].Add(citiesInOrder.First(x => x.Id == ra.CityId));
                 }
-                
             }
 
             for (int i = 0; i < routes.Count; i++)
@@ -298,11 +235,11 @@ namespace SimulatedAnnealing.VRP
                 {
                     for (int j = 0; j < routes[i].Count - 1; j++)
                     {
-                        error += CalculateDistance(routes[i][j], routes[i][j + 1]);
+                        error += DistanceCalculator.CalculateManhattanDistance(routes[i][j], routes[i][j + 1]);
                     }
 
-                    error += CalculateDistance(routes[i][0], citiesInOrder.First(x => x.Id == 0));
-                    error += CalculateDistance(citiesInOrder.First(x => x.Id == 0), routes[i][^1]);
+                    error += DistanceCalculator.CalculateManhattanDistance(routes[i][0], citiesInOrder.First(x => x.Id == 0));
+                    error += DistanceCalculator.CalculateManhattanDistance(citiesInOrder.First(x => x.Id == 0), routes[i][^1]);
                 }
             }
 
@@ -310,13 +247,10 @@ namespace SimulatedAnnealing.VRP
             error += CalculateTimePrecision();
             error += CalculateTimeOverlap();
 
-
             return error;
         }
 
-
-
-        private float CalculateFairness() // assume drivers want equal n routes.
+        private float CalculateFairness()
         {
             float mse = 0;
             var average = citiesInOrder.Count / routes.Count;
@@ -328,7 +262,6 @@ namespace SimulatedAnnealing.VRP
 
             return mse;
         }
-
 
         private float CalculateTimePrecision()
         {
@@ -359,16 +292,15 @@ namespace SimulatedAnnealing.VRP
 
             return error;
         }
+
         private float CalculateTimeOverlap()
         {
-
             float error = 0;
             for (int i = 0; i < nVehicles; i++)
             {
                 var relevantAppts = appointments.Where(x => x.VehicleId == i).OrderBy(x => x.Start).ToList();
-                for (int j = 0; j < relevantAppts.Count -1; j++)
+                for (int j = 0; j < relevantAppts.Count - 1; j++)
                 {
-
                     if (relevantAppts[j].Start > relevantAppts[j + 1].Start)
                     {
                         error += relevantAppts[j].Start - relevantAppts[j + 1].Start;
@@ -391,10 +323,24 @@ namespace SimulatedAnnealing.VRP
             return error;
         }
 
+        protected override void OnBestSolutionFound(float error)
+        {
+            bestScenarioFound = new List<Appointment>();
+            for (int k = 0; k < appointments.Count; k++)
+            {
+                bestScenarioFound.Add(appointments[k].Copy());
+            }
+        }
+
+        protected override void DisplayResults()
+        {
+            Console.WriteLine("List of routes in their new order.");
+            Console.WriteLine($"Best error found: {bestErrorFound}");
+            DisplayTimeWindows();
+        }
+
         private void DisplayTimeWindows()
         {
-            
-            float error = 0;
             for (int i = 0; i < nVehicles; i++)
             {
                 var relevantAppts = appointments.Where(x => x.VehicleId == i).OrderBy(x => x.Start).ToList();
@@ -405,83 +351,6 @@ namespace SimulatedAnnealing.VRP
                     Console.WriteLine($"At {ra.CityId}: {ra.Start}-{ra.End} vs {correspondingTimeWindow.Start}-{correspondingTimeWindow.End}");
                 }
             }
-        }
-
-        //Euclidean
-        private float CalculateDistance(City firstCity, City secondCity)
-        {
-            float distance = 0;
-            distance += Math.Abs(firstCity.X - secondCity.X);
-            distance += Math.Abs(firstCity.Y - secondCity.Y);
-            return distance;
-        }
-
-        public void PrintAllDistances()
-        {
-            for (int i = 0; i < citiesInOrder.Count; i++)
-            {
-                for (int j = 0; j < citiesInOrder.Count; j++)
-                {
-                    Console.Write($"{CalculateDistance(citiesInOrder[i], citiesInOrder[j])} ");
-                }
-                Console.WriteLine();
-            }
-        }
-
-        public void DisplayResults()
-        {
-            Console.WriteLine("List of routes in their new order.");
-
-            DisplayRoutes();
-            DisplayTimeWindows();
-        }
-
-
-        public void DisplayRoutes()
-        {
-            //for (int i = 0; i < bestScenarioFound.Count; i++)
-            //{
-            //    Console.WriteLine($"Routes for vehicle {i}:");
-
-            //    Console.Write($"{bestScenarioFound[i].CityId}, ");
-                
-            //    Console.WriteLine();
-            //}
-
-        }
-
-
-    }
-
-    // When deliveries can be routed successfully
-    public class TimeWindow
-    {
-        public int CityId { get; set; }
-        public int Start { get; set; }
-        public int End { get; set; }
-    }
-
-    public class VehicleSchedule
-    {
-        public List<Appointment> ScheduleBlocks { get; set; }
-    }
-
-    public class Appointment
-    {
-        public int CityId { get; set; }
-        public int Start { get; set; }
-        public int End { get; set; }
-        public int VehicleId { get; set; }
-
-        public Appointment Copy()
-        {
-            return new Appointment()
-            {
-                CityId = CityId,
-                Start = Start,
-                End = End,
-                VehicleId = VehicleId
-            };
         }
     }
 }

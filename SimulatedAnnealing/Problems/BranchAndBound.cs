@@ -1,19 +1,23 @@
-﻿using CsvHelper;
+using CsvHelper;
 using CsvHelper.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
+using SimulatedAnnealing.Core;
+using SimulatedAnnealing.Models;
+using SimulatedAnnealing.Utilities;
 
-namespace SimulatedAnnealing
+namespace SimulatedAnnealing.Problems
 {
-    // See https://tspvis.com/ for BranchAndBound implementation in javascript
+    /// <summary>
+    /// Branch and Bound exact algorithm for solving TSP
+    /// See https://tspvis.com/ for implementation reference
+    /// </summary>
     public class BranchAndBound : IRun
     {
-        //private PathAndCost currentPathAndCost;
         private string xyDataFile;
         private List<City> citiesInOrder;
         private Random seed = new Random();
@@ -38,10 +42,6 @@ namespace SimulatedAnnealing
             {
                 LoadDataFromCitiesFile();
             }
-            else
-            {
-                // stored already.
-            }
         }
 
         private void LoadDataFromCitiesFile()
@@ -65,13 +65,14 @@ namespace SimulatedAnnealing
                 citiesInOrder[i].Id = i;
             }
 
+            // Shuffle cities to start with a random configuration
             for (int i = 0; i < citiesInOrder.Count; i++)
             {
                 SwapCities();
             }
         }
 
-        public void SwapCities()
+        private void SwapCities()
         {
             int firstCity = seed.Next(citiesInOrder.Count);
             int secondCity = (firstCity + seed.Next(citiesInOrder.Count)) % citiesInOrder.Count;
@@ -81,15 +82,26 @@ namespace SimulatedAnnealing
             citiesInOrder[secondCity] = toSwap;
         }
 
+        public void Run()
+        {
+            Load();
+            var result = DoBranchAndBoundSync(citiesInOrder);
+            bestScenarioFound = result.Path;
+            Console.WriteLine($"Branch and Bound completed with cost: {result.Cost}");
+        }
+
         public async Task RunAsync()
         {
             Load();
             PathAndCost pnc = await DoBranchAndBound(citiesInOrder);
             bestScenarioFound = pnc.Path;
+            Console.WriteLine($"Branch and Bound completed with cost: {pnc.Cost}");
         }
 
-        /// <returns>Best route</returns>
-        async public Task<PathAndCost> DoBranchAndBound(
+        /// <summary>
+        /// Synchronous version of Branch and Bound algorithm
+        /// </summary>
+        private PathAndCost DoBranchAndBoundSync(
             List<City> points,
             List<City> route = null,
             List<City> visited = null,
@@ -109,13 +121,11 @@ namespace SimulatedAnnealing
 
             if (error > overallBest)
             {
-                //Console.WriteLine("Bounding here because this is worst than the best solution");
                 return new PathAndCost { Path = null, Cost = null };
             }
 
             if (available.Count == 0)
             {
-                //bestScenarioFound = route;
                 for (int i = 0; i < route.Count; i++)
                 {
                     Console.Write(route[i].Id + ", ");
@@ -128,8 +138,69 @@ namespace SimulatedAnnealing
 
             foreach (var c in available)
             {
-                //var copy = c.Copy();
+                visited.Add(c);
+                route.Add(c);
 
+                PathAndCost currentPathAndCost = DoBranchAndBoundSync(points, route, visited, overallBest);
+
+                if (currentPathAndCost.Cost < bestCost)
+                {
+                    bestCost = currentPathAndCost.Cost;
+                    bestPath = currentPathAndCost.Path;
+
+                    if (bestCost < overallBest)
+                    {
+                        Console.WriteLine($"best Error = {bestCost}, overall best = {overallBest}");
+                        overallBest = bestCost;
+                    }
+                }
+
+                visited.Remove(c);
+                route.Remove(c);
+            }
+            return new PathAndCost { Cost = bestCost, Path = bestPath };
+        }
+
+        /// <summary>
+        /// Asynchronous version of Branch and Bound algorithm
+        /// </summary>
+        private async Task<PathAndCost> DoBranchAndBound(
+            List<City> points,
+            List<City> route = null,
+            List<City> visited = null,
+            float? overallBest = float.PositiveInfinity)
+        {
+            if (visited == null)
+            {
+                var firstPoint = points[0];
+                points.Remove(firstPoint);
+                route = new List<City>();
+                route.Add(firstPoint);
+                visited = new List<City>();
+            }
+            var available = points.Except(visited).ToList();
+
+            var error = CalculateError(route);
+
+            if (error > overallBest)
+            {
+                return new PathAndCost { Path = null, Cost = null };
+            }
+
+            if (available.Count == 0)
+            {
+                for (int i = 0; i < route.Count; i++)
+                {
+                    Console.Write(route[i].Id + ", ");
+                }
+                return new PathAndCost { Path = route, Cost = error };
+            }
+
+            float? bestCost = float.PositiveInfinity;
+            List<City> bestPath = null;
+
+            foreach (var c in available)
+            {
                 visited.Add(c);
                 route.Add(c);
 
@@ -137,62 +208,37 @@ namespace SimulatedAnnealing
 
                 if (currentPathAndCost.Cost < bestCost)
                 {
-                    //Console.WriteLine("Found an improvement.");
                     bestCost = currentPathAndCost.Cost;
                     bestPath = currentPathAndCost.Path;
-                    
+
                     if (bestCost < overallBest)
                     {
                         Console.WriteLine($"best Error = {bestCost}, overall best = {overallBest}");
                         overallBest = bestCost;
-                        //Console.WriteLine($"cities in route: {currentPathAndCost.Path.Count}");
                     }
-                    
                 }
-                //Console.WriteLine($"Removing inserted indexes {visitedInsertionIndex} and {routeInsertionIndex}");
+
                 visited.Remove(c);
                 route.Remove(c);
             }
             return new PathAndCost { Cost = bestCost, Path = bestPath };
         }
 
-
-        public float CalculateError(List<City> route)
+        private float CalculateError(List<City> route)
         {
-            //Console.WriteLine("calculating error");
             float error = 0;
 
             for (int i = 0; i < route.Count - 1; i++)
             {
-                error += CalculateDistance(route[i], route[i + 1]);
+                error += DistanceCalculator.CalculateManhattanDistance(route[i], route[i + 1]);
             }
-            error += CalculateDistance(route[^1], route[0]);
+            error += DistanceCalculator.CalculateManhattanDistance(route[^1], route[0]);
             return error;
-        }
-
-        //Euclidean
-        private float CalculateDistance(City firstCity, City secondCity)
-        {
-            float distance = 0;
-            distance += Math.Abs(firstCity.X - secondCity.X);
-            distance += Math.Abs(firstCity.Y - secondCity.Y);
-            return distance;
-        }
-
-        public void Run()
-        {
-            throw new NotImplementedException();
         }
 
         public List<City> GetBestScenarioFound()
         {
             return bestScenarioFound;
-        }
-
-        public class PathAndCost
-        {
-            public List<City> Path { get; set; }
-            public float? Cost { get; set; }
         }
     }
 }
